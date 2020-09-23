@@ -33,40 +33,56 @@ class Root(tk.Tk):
         self.my_font = Font(size=15)
         self.iconbitmap('D:\\Python\\Projects\\fun_with_data\\cash_icon.ico')
 
+        # vykresleni rozhrani
+        self.make_frames()
         self.make_labels()
         self.make_buttons()
         self.make_entries()
 
         self.bind('<Return>', lambda a: self.yes_click())
-    def make_labels(self):
 
+
+    def make_frames(self):
+        # definice vsech framu v rozhrani
+
+        self.frame_main = tk.LabelFrame(padx=5, pady=5)
+        self.frame_main.grid(row=0, column=0, columnspan=3, padx=10, pady=10, sticky=tk.N)
+
+        self.frame_error = tk.LabelFrame(padx=5, pady=5, text='Chybové hlášení')
+        self.frame_error.grid(row=1, column=0, rowspan=1, columnspan=3, padx=10, pady=10, sticky = tk.W + tk.E + tk.S)
+
+        self.frame_graph = tk.LabelFrame(padx=1, pady=1, text='Sloupcový graf')
+        self.frame_graph.grid(row=0, column=3, rowspan=2, padx=10, pady=10)
+    def make_labels(self):
+        # definice vsech labelu v rozhrani
         act_date = datetime.date.today().isocalendar()[1]
         date_text = "Současný týden: " + str(act_date)
 
-        self.label_date = tk.Label(self, text=date_text, font=self.my_font)
-        self.label_date.grid(row=0, column=3)
 
-        self.label_tyden = tk.Label(self, text="Týden", font=self.my_font)
-        self.label_tyden.grid(row=0, column=1, columnspan=2)
+        self.label_date = tk.Label(self.frame_main, text=date_text, bd=5, font=self.my_font)
+        self.label_date.grid(row=0, column=3, sticky=tk.N)
 
-        self.label_error = tk.Label(self, text="", font=self.my_font)
-        self.label_error.grid(row=8, column=1, columnspan=2)
+        self.label_tyden = tk.Label(self.frame_main, text="Týden", bd=1, font=self.my_font)
+        self.label_tyden.grid(row=0, column=1, columnspan=2, sticky=tk.N)
+
+        self.label_error = tk.Label(self.frame_error, text="", font=self.my_font)
+        self.label_error.grid(row=3, column=1, columnspan=3, rowspan=4, sticky=tk.N)
 
 
     def make_buttons(self):
         # definice vsech tlacitek v rozhrani
-        self.button_yes = tk.Button(self, text="OK", command=self.yes_click, font=self.my_font)
-        self.button_yes.grid(row=1, column=3, sticky='NW', padx=5)
+        self.button_yes = tk.Button(self.frame_main, text="OK", command=self.yes_click, font=self.my_font)
+        self.button_yes.grid(row=1, column=3, sticky=tk.N, padx=5)
 
-        self.button_next = tk.Button(self, text='==>', command=self.next_click, font=self.my_font)
-        self.button_next.grid(row=2, column=2)
+        self.button_next = tk.Button(self.frame_main, text='==>', command=self.next_click, font=self.my_font)
+        self.button_next.grid(row=2, column=2, sticky=tk.N)
 
-        self.button_previous = tk.Button(self, text='<==', command=self.previous_click, state='disabled', font=self.my_font)
-        self.button_previous.grid(row=2, column=1)
+        self.button_previous = tk.Button(self.frame_main, text='<==', command=self.previous_click, state='disabled', font=self.my_font)
+        self.button_previous.grid(row=2, column=1, sticky=tk.N)
 
     def make_entries(self):
         # definice vsech entry v rozhrani
-        self.entry_tyden = tk.Entry(self, font=self.my_font, width=10)
+        self.entry_tyden = tk.Entry(self.frame_main, font=self.my_font, width=10)
         self.entry_tyden.grid(row=1, column=1, columnspan=2, padx=5)
         self.entry_tyden.insert(0, '1')
 
@@ -113,7 +129,7 @@ class Root(tk.Tk):
                 v_count = v_count.add(data[c].value_counts(), fill_value=0)
 
             # vytvoreni figure
-            fig = plt.Figure(figsize=(10, 8), dpi=100)
+            fig = plt.Figure(figsize=(10, 6),  dpi=100)
             fig.suptitle("Čísla tažená v {}. týdnu".format(self.entry_tyden.get()))
 
             # vizualizace grafu
@@ -121,13 +137,15 @@ class Root(tk.Tk):
             data = v_count.sort_values()
             ax.bar(list(map(str, data.index.astype(int))), data.values)
             ax.tick_params(axis='x', rotation=50)
-            canvas = FigureCanvasTkAgg(fig, self)
-            canvas.get_tk_widget().grid(row=0, column=4, rowspan=100)
+            canvas = FigureCanvasTkAgg(fig, self.frame_graph)
+            canvas.get_tk_widget().grid(row=0, column=4, rowspan=8)
             self.print_error("")
         except IndexError:
             self.print_error("TÝDEN NEEXISTUJE!")
-        except Exception:
-            self.print_error("TÝDEN ZADÁN VE ŠPATNÉM FORMÁTU!")
+        except ValueError:
+            self.print_error("TÝDEN ZADÁN VE ŠPATNÉM FORMÁTU")
+        except ImportError:
+            self.print_error("ŠPATNÝ FORMÁT TÝDNE")
 
 
     def print_error(self, message):
