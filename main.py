@@ -28,7 +28,7 @@ class Root(tk.Tk):
     def __init__(self):
         super().__init__()
         self.geometry("1500x800")
-
+        self.title("Loterie Aplikace")
         self.my_font = Font(size=15)
 
         self.make_labels()
@@ -98,7 +98,7 @@ class Root(tk.Tk):
 
 if __name__ == '__main__':
     main_win = Root()
-    main_win.title("Loterie Aplikace")
+
     main_win.mainloop()
 
 
