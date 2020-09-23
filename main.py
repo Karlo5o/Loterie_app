@@ -28,7 +28,7 @@ class Root(tk.Tk):
     def __init__(self):
         super().__init__()
         self.geometry("1500x800")
-
+        self.title("Loterie Aplikace")
         self.my_font = Font(size=15)
 
         self.make_labels()
