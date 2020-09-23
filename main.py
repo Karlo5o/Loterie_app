@@ -100,3 +100,5 @@ if __name__ == '__main__':
     main_win = Root()
 
     main_win.mainloop()
+    print(baba)
+
