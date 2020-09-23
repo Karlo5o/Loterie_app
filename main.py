@@ -98,7 +98,7 @@ class Root(tk.Tk):
 
 if __name__ == '__main__':
     main_win = Root()
-
+    main_win.title("Loterie Aplikace")
     main_win.mainloop()
 
 
