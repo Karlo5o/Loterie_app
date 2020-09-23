@@ -31,13 +31,17 @@ class Root(tk.Tk):
         self.geometry("1500x800")
         self.title("Loterie Aplikace")
         self.my_font = Font(size=15)
+        self.my_font_smaller = Font(size=11)
         self.iconbitmap('D:\\Python\\Projects\\fun_with_data\\cash_icon.ico')
+
 
         # vykresleni rozhrani
         self.make_frames()
         self.make_labels()
         self.make_buttons()
         self.make_entries()
+
+
 
         self.bind('<Return>', lambda a: self.yes_click())
 
@@ -53,6 +57,10 @@ class Root(tk.Tk):
 
         self.frame_graph = tk.LabelFrame(padx=1, pady=1, text='Sloupcový graf')
         self.frame_graph.grid(row=0, column=3, rowspan=2, padx=10, pady=10)
+
+        self.frame_draws = tk.LabelFrame(padx=10, pady=10, text="Výsledky v daných kolech")
+        self.frame_draws.grid(row=2, column=0, columnspan=4, padx=10, pady=10, sticky = tk.W + tk.E)
+
     def make_labels(self):
         # definice vsech labelu v rozhrani
         act_date = datetime.date.today().isocalendar()[1]
@@ -121,12 +129,32 @@ class Root(tk.Tk):
             raw_data = pd.read_html(used_url)
 
             # vybrani potrebnych sloupcu a procisteni od NA
-            data = raw_data[3][[1, 2, 3, 4, 5, 6]].dropna()
+            data = raw_data[3][[0, 1, 2, 3, 4, 5, 6]].dropna()
 
             # vytvoreni value_counts pro cely dataframe
             v_count = pd.Series([], dtype=np.int8)
-            for c in data.columns:
+
+            for c in data.columns[1:]:
                 v_count = v_count.add(data[c].value_counts(), fill_value=0)
+
+
+            self.draws = []
+            draw = [] # vytvoreni promenne, ktera nese datum a pote dve losovani z toho data
+            for d in data.values:
+                if not draw:
+                    draw.append(d[0][:-5]) # pridani data
+
+                time = d[0][-5:]
+                values = d[1:].astype(int).astype(str)
+                values = ", ".join(values)
+                draw.append(time + ': ' + values)
+                if len(draw) == 3:
+                    self.draws.append(draw)
+                    draw = []
+
+
+            self.print_draws()
+
 
             # vytvoreni figure
             fig = plt.Figure(figsize=(10, 6),  dpi=100)
@@ -134,8 +162,8 @@ class Root(tk.Tk):
 
             # vizualizace grafu
             ax = fig.add_subplot(1, 1, 1)
-            data = v_count.sort_values()
-            ax.bar(list(map(str, data.index.astype(int))), data.values)
+            data_graph = v_count.sort_values()
+            ax.bar(list(map(str, data_graph.index.astype(int))), data_graph.values)
             ax.tick_params(axis='x', rotation=50)
             canvas = FigureCanvasTkAgg(fig, self.frame_graph)
             canvas.get_tk_widget().grid(row=0, column=4, rowspan=8)
@@ -146,6 +174,21 @@ class Root(tk.Tk):
             self.print_error("TÝDEN ZADÁN VE ŠPATNÉM FORMÁTU")
         except ImportError:
             self.print_error("ŠPATNÝ FORMÁT TÝDNE")
+
+
+    def print_draws(self):
+        for w in self.frame_draws.winfo_children():
+            w.destroy()
+        for date, draw1, draw2 in self.draws:
+
+            f = tk.LabelFrame(self.frame_draws, padx=5, pady=5, text=date, )
+            f.pack(side=tk.LEFT)
+
+            l1 = tk.Label(f, text=draw1, font=self.my_font_smaller)
+            l2 = tk.Label(f, text=draw2, font=self.my_font_smaller)
+
+            l1.grid(row=0, column=0, sticky=tk.W)
+            l2.grid(row=1, column=0, sticky=tk.W)
 
 
     def print_error(self, message):
