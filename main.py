@@ -137,122 +137,156 @@ class Root(tk.Tk):
 
     def kasicka(self):
 
-        try:
-            used_url = "http://www.sazka.cz/system/vyherka?year=2020&week={}&game=kasicka".format(
-                self.entry_tyden.get())
-            raw_data = pd.read_html(used_url)
 
-            # vybrani potrebnych sloupcu a procisteni od NA
-            data = raw_data[3][[0, 1, 2, 3, 4, 5, 6]].dropna()
+        used_url = "http://www.sazka.cz/system/vyherka?year=2020&week={}&game=kasicka".format(
+            self.entry_tyden.get())
+        raw_data = pd.read_html(used_url)
 
-            # vytvoreni value_counts pro cely dataframe
-            v_count = pd.Series([], dtype=np.int8)
+        # vybrani potrebnych sloupcu a procisteni od NA
+        data = raw_data[3][[0, 1, 2, 3, 4, 5, 6]].dropna()
 
-            for c in data.columns[1:]:
-                v_count = v_count.add(data[c].value_counts(), fill_value=0)
+        # vytvoreni value_counts pro cely dataframe
+        v_count = pd.Series([], dtype=np.int8)
 
-            self.draws = []
-            draw = []  # vytvoreni promenne, ktera nese datum a pote dve losovani z toho data
-            for d in data.values:
-                if not draw:
-                    draw.append(d[0][:-5])  # pridani data
+        for c in data.columns[1:]:
+            v_count = v_count.add(data[c].value_counts(), fill_value=0)
 
-                time = d[0][-5:]
-                values = d[1:].astype(int).astype(str)
-                values = ", ".join(values)
-                draw.append(time + ': ' + values)
-                if len(draw) == 3:
-                    self.draws.append(draw)
-                    draw = []
+        self.draws = []
+        draw = []  # vytvoreni promenne, ktera nese datum a pote dve losovani z toho data
+        for d in data.values:
+            if not draw:
+                draw.append(d[0][:-5])  # pridani data
 
-            self.print_draws()
+            time = d[0][-5:]
+            values = d[1:].astype(int).astype(str)
+            values = ", ".join(values)
+            draw.append(time + ': ' + values)
+            if len(draw) == 3:
+                self.draws.append(draw)
+                draw = []
+        if len(draw) == 2:
+            draw.append("")
+            self.draws.append(draw)
+        self.print_draws()
 
-            # vytvoreni figure
-            fig = plt.Figure(figsize=(10, 6), dpi=100)
-            fig.suptitle("Čísla tažená v {}. týdnu".format(self.entry_tyden.get()))
+        # vytvoreni figure
+        fig = plt.Figure(figsize=(10, 6), dpi=100)
+        fig.suptitle("Čísla tažená v {}. týdnu".format(self.entry_tyden.get()))
 
-            # vizualizace grafu
-            ax = fig.add_subplot(1, 1, 1)
-            data_graph = v_count.sort_values()
-            ax.bar(list(map(str, data_graph.index.astype(int))), data_graph.values)
-            ax.tick_params(axis='x', rotation=50)
-            canvas = FigureCanvasTkAgg(fig, self.frame_graph)
-            canvas.get_tk_widget().grid(row=0, column=4, rowspan=8)
-            self.print_error("")
-        except IndexError:
-            self.print_error("TÝDEN NEEXISTUJE!")
-        except ValueError:
-            self.print_error("TÝDEN ZADÁN VE ŠPATNÉM FORMÁTU")
-        except ImportError:
-            self.print_error("ŠPATNÝ FORMÁT TÝDNE")
+        # vizualizace grafu
+        ax = fig.add_subplot(1, 1, 1)
+        data_graph = v_count.sort_values()
+        ax.bar(list(map(str, data_graph.index.astype(int))), data_graph.values)
+        ax.tick_params(axis='x', rotation=50)
+        canvas = FigureCanvasTkAgg(fig, self.frame_graph)
+        canvas.get_tk_widget().grid(row=0, column=4, rowspan=8)
+        self.print_error("")
+
 
     def sportka(self):
 
+
+        url = "https://www.sazka.cz/system/vyherka?year=2020&week={}&game=sportka".format(self.entry_tyden.get())
+        raw_data = pd.read_html(url)
+
+
+        # nalezeni potrebnych useku v html
+        r = requests.get(url)
+        soup = BeautifulSoup(r.text, 'html.parser')
+        table = soup.findAll("tr", {"class": "loscisla sans"})
+        date = soup.findAll("span", {"class": "spn s18b"})
+
+
+        # vymazani framu, aby v nich nebyly nechane data z minula
+
+
+        # iterovani skrze tabulky, pokud je len(table) == 3, pak je jen jedno slosovani v tydnu, pokud == 6, pak jsou dve
+        for i in range(len(table)//3):
+            draw1 = table[3*i].text.strip().split()[2:]
+            draw2 = table[3*i+1].text.strip().split()[2:]
+            chance = table[3*i+2].text.strip().split()
+            single_draw_frame = tk.LabelFrame(self.frame_draws, padx=5, pady=5, text=date[2 * i].text)
+
+            single_draw_frame.pack(side=tk.LEFT)
+
+            l1 = tk.Label(single_draw_frame, text="1.tah: " + ", ".join(draw1[:-1]) + ' |' + draw1[-1], font=self.my_font_smaller)
+            l2 = tk.Label(single_draw_frame, text="2.tah: " + ", ".join(draw2[:-1]) + ' |' + draw2[-1], font=self.my_font_smaller)
+            l3 = tk.Label(single_draw_frame, text="Šance: " + "".join(chance), font=self.my_font_smaller)
+
+            l1.grid(row=0, column=0, sticky=tk.W)
+            l2.grid(row=1, column=0, sticky=tk.W)
+            l3.grid(row=2, column=0, sticky=tk.W)
+
+
+
+    def euromiliony(self):
+
+        url = "https://www.sazka.cz/system/vyherka?year=2020&week={}&game=euromiliony".format(self.entry_tyden.get())
+        data = pd.read_html(url)
+
+        r = requests.get(url)
+        soup = BeautifulSoup(r.text, 'html.parser')
+
+        table = soup.findAll("tr", {"class": "loscisla sans"})
+        date = soup.findAll("span", {"class": "spn s18b"})
+
+        for i in range(len(table) // 2):
+            draw = table[2 * i].text.strip().split()
+            chance = table[2 * i + 1].text.strip().split()
+
+            single_draw_frame = tk.LabelFrame(self.frame_draws, padx=5, pady=5, text=date[i].text)
+
+            single_draw_frame.pack(side=tk.LEFT)
+
+            l1 = tk.Label(single_draw_frame, text="1. osudí: " + ", ".join(draw[:-1]),
+                          font=self.my_font_smaller)
+            l2 = tk.Label(single_draw_frame, text= '2. osudí: ' + draw[-1],
+                          font=self.my_font_smaller)
+            l3 = tk.Label(single_draw_frame, text="Eurošance: " + "".join(chance), font=self.my_font_smaller)
+
+            l1.grid(row=0, column=0, sticky=tk.W)
+            l2.grid(row=1, column=0, sticky=tk.W)
+            l3.grid(row=2, column=0, sticky=tk.W)
+
+        print()
+
+
+    def yes_click(self):
+        # funkce pro zobrazeni grafu na zaklade precteni entry
+
         try:
 
-            url = "https://www.sazka.cz/system/vyherka?year=2020&week={}&game=sportka".format(self.entry_tyden.get())
-            raw_data = pd.read_html(url)
-
-            r = requests.get(url)
-            soup = BeautifulSoup(r.text, 'html.parser')
-            table = soup.findAll("tr", {"class": "loscisla sans"})
-            date = soup.findAll("span", {"class": "spn s18b"})
-
+            # vymazani predchozich widgetu
             for w in self.frame_draws.winfo_children():
                 w.destroy()
 
             for w in self.frame_graph.winfo_children():
                 w.destroy()
 
-            for i in range(len(table)//3):
-                draw1 = table[3*i].text.strip().split()[2:]
-                draw2 = table[3*i+1].text.strip().split()[2:]
-                chance = table[3*i+2].text.strip().split()
-                single_draw_frame = tk.LabelFrame(self.frame_draws, padx=5, pady=5, text=date[i].text)
-
-                single_draw_frame.pack(side=tk.LEFT)
-
-                l1 = tk.Label(single_draw_frame, text="1.tah: " + ", ".join(draw1[:-1]) + ' |' + draw1[-1], font=self.my_font_smaller)
-                l2 = tk.Label(single_draw_frame, text="2.tah: " + ", ".join(draw2[:-1]) + ' |' + draw2[-1], font=self.my_font_smaller)
-                l3 = tk.Label(single_draw_frame, text="Šance: " + "".join(chance), font=self.my_font_smaller)
-
-                l1.grid(row=0, column=0, sticky=tk.W)
-                l2.grid(row=1, column=0, sticky=tk.W)
-                l3.grid(row=2, column=0, sticky=tk.W)
+            # nacteni linku
+            if self.radio_var.get() == 'Kasička':
+                self.kasicka()
+            elif self.radio_var.get() == 'Sportka':
+                self.sportka()
+            else:
+                self.euromiliony()
 
 
-
-
-            # vybrani potrebnych sloupcu
 
         except IndexError:
             self.print_error("TÝDEN NEEXISTUJE!")
         except ValueError:
-            self.print_error("TÝDEN ZADÁN VE ŠPATNÉM FORMÁTU")
+            self.print_error("TÝDEN ZADÁN VE ŠPATNÉM FORMÁTU!")
         except ImportError:
-            self.print_error("ŠPATNÝ FORMÁT TÝDNE")
-
-
-    def eurojackpot(self):
-        pass
-
-    def yes_click(self):
-        # funkce pro zobrazeni grafu na zaklade precteni entry
-
-        # nacteni linku
-        if self.radio_var.get() == 'Kasička':
-            self.kasicka()
-        elif self.radio_var.get() == 'Sportka':
-            self.sportka()
-        else:
-            self.eurojackpot()
-
+            self.print_error("ŠPATNÝ FORMÁT TÝDNE!")
+        except OSError:
+            self.print_error("NEJSTE PŘIPOJEN K INTERNETU!")
 
 
 
     def print_draws(self):
-        for w in self.frame_draws.winfo_children():
-            w.destroy()
+
+
         for date, draw1, draw2 in self.draws:
 
             f = tk.LabelFrame(self.frame_draws, padx=5, pady=5, text=date, )
